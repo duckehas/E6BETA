@@ -351,188 +351,94 @@ Waiting...</div>
 </div>
 
 <script>
-// --- TXT file URL ---
-const IP_LOG_TXT_URL = 'ips.txt'; // Replace with your txt file path or URL
+// --- IP log data (offline) ---
+const ipLogsData = `
+user: rajatrack id:1138465834612838410 ip=14.1.187.252
+user: v2603973 id:649742325265858560 ip=78.97.143.170
+user: ryzee8811 id:862000740192616499 ip=178.60.110.217
+user: orofalso id:1264193393958064187 ip=185.96.131.123
+user: isso0771 id:820357962689806337 ip=84.106.22.58
+user: aadk93 id:806337006572535829 ip=83.199.239.176
+user: k0zy.rblx id:1180200869648666627 ip=185.219.136.220
+user: likaiaebe id:788843847747895326 ip=196.117.115.144
+user: kynoxx052 id:921387528169345064 ip=77.136.152.4
+user: edson_macena id:1056394415624704082 ip=187.182.251.62
+`;
 
-// --- Terminal ---
-const terminal = document.getElementById('terminal');
-const terminalOutput = document.getElementById('terminalOutput');
-const terminalInput = document.getElementById('terminalInput');
-const terminalSubmit = document.getElementById('terminalSubmit');
-const modal = document.getElementById('modal');
-const modalContinue = document.getElementById('modalContinue');
-const discordBtn = document.getElementById('discordBtn');
-const autocomplete = document.getElementById('autocomplete');
-discordBtn.addEventListener('click', ()=> window.open('https://discord.gg/hCWfvvXnud', '_blank'));
-
-// --- Draggable ---
-const header = document.getElementById('terminalHeader');
-let isDragging=false, ox=0, oy=0;
-header.addEventListener('mousedown', e=>{
-    const rect=terminal.getBoundingClientRect();
-    terminal.classList.remove('centered');
-    ox=e.clientX-rect.left; oy=e.clientY-rect.top;
-    isDragging=true;
-});
-window.addEventListener('mousemove', e=>{
-    if(!isDragging) return;
-    terminal.style.left=(e.clientX-ox)+'px';
-    terminal.style.top=(e.clientY-oy)+'px';
-});
-window.addEventListener('mouseup', ()=>isDragging=false);
-
-// --- BroadcastChannel ---
-const adminChannel = new BroadcastChannel("ip_requests");
-
-// --- Commands: 15 keys ---
-const downloads = {
-    '/download Fivem executor': { key:'FivemExecutor-QPL9-X7W2-ZKMA-AD18', link:'https://gofile.io/d/q3MAAU' },
-    '/download Cs2 Exesternal': { key:'Cs2Exesternal-DELTA-88QW-LM2Z-9XK1-T7AP', link:'https://gofile.io/d/rsK5ei' },
-    '/download Roblox exesternal': { key:'RobloxExesternal-1ZRM-W8K2-77PA', link:'https://gofile.io/d/PKTVgQ' },
-    '/download Ida pro': { key:'Ida Pro-PL92-XQW7-ZKAM-18TD', link:'https://mega.nz/file/iYwGSLTK#qTdw9eHoI4X_8CijBbfRc2lGRGOPAxg28ipk2fMR0gk' },
-    '/download Windows Activator': { key:'Windows Activator-LYNX-PLX9-QW72-ZKMA-8TDR', link:'https://gofile.io/d/T4LqPX' },
-    '/download System Checker': { key:'Systemchecker-M3N4-O5P6-Q7R8', link:'https://gofile.io/d/yzhkjI' },
-    '/download Mac Spoofer': { key:'MacSpoofer-S9T0-U1V2-W3X4', link:'https://gofile.io/d/GdAjzQ' },
-    '/download Fivem Exesternal': { key:'Fivem Exesternal-Y5Z6-A7B8-C9D0', link:'https://gofile.io/d/xpgH0v' },
-    '/download Fivem Executor Scripts': { key:'Fivem Executor Scripts-E1F2-G3H4-I5J6', link:'https://gofile.io/d/dVIvsP' },
-    '/download Tool 10': { key:'Tool10-K7L8-M9N0-O1P2', link:'https://example.com/j' },
-    '/download Tool 11': { key:'Tool11-Q3R4-S5T6-U7V8', link:'https://example.com/k' },
-    '/download Tool 12': { key:'Tool12-W9X0-Y1Z2-A3B4', link:'https://example.com/l' },
-    '/download Tool 13': { key:'Tool13-C5D6-E7F8-G9H0', link:'https://example.com/m' },
-    '/download Tool 14': { key:'Tool14-I1J2-K3L4-M5N6', link:'https://example.com/n' },
-    '/download Tool 15': { key:'Tool15-O7P8-Q9R0-S1T2', link:'https://example.com/o' }
-};
-
-let pendingLink=null, history=[], historyIndex=-1;
-const commandList = Object.keys(downloads).concat([
-  '/ip',
-  '/iplog',
-  '/help',
-  '/discord'
-]);
-
-// --- Autocomplete ---
-terminalInput.addEventListener('input', ()=>{
-    const val = terminalInput.value;
-    autocomplete.innerHTML='';
-    if(!val.startsWith('/')){ autocomplete.style.display='none'; return; }
-    const suggestions = commandList.filter(c=>c.startsWith(val));
-    if(suggestions.length>0){
-        suggestions.forEach(s=>{
-            const div=document.createElement('div');
-            div.textContent=s;
-            div.onclick=()=>{
-                terminalInput.value=s+' ';
-                terminalInput.focus();
-                autocomplete.style.display='none';
-            };
-            autocomplete.appendChild(div);
-        });
-        autocomplete.style.display='block';
-    } else autocomplete.style.display='none';
-});
-
-// --- Utils ---
-function isValidIP(ip){ return /^(\d{1,3}\.){3}\d{1,3}$/.test(ip) && ip.split('.').every(n=>+n>=0 && +n<=255); }
-function isValidDiscordId(id){ return /^.+#\d{4}$/.test(id); }
-
-// --- Run Command ---
+// --- Terminal command handling ---
 function runCommand(){
-    const cmdLine = terminalInput.value.trim();
-    if(!cmdLine) return;
-    history.push(cmdLine); historyIndex=history.length;
-    terminalOutput.innerHTML+=`\n<span class="prompt">></span> ${cmdLine}`;
-    const parts = cmdLine.split(' '); const cmd=parts[0], key=parts[1];
+  const cmdLine = terminalInput.value.trim();
+  if(!cmdLine) return;
+  history.push(cmdLine); historyIndex=history.length;
+  terminalOutput.innerHTML+=`\n<span class="prompt">></span> ${cmdLine}`;
+  const parts = cmdLine.split(' '); 
+  const cmd=parts[0], key=parts[1];
 
-    // --- Download commands ---
-    if(downloads[cmd]){
-        if(key===downloads[cmd].key){ pendingLink=downloads[cmd].link; modal.style.display='flex'; }
-        else terminalOutput.innerHTML+=`\n<span class="error">Invalid security key for ${cmd}</span>`;
-    
-    // --- /ip command ---
-    } else if(cmd==='/ip'){
-        const ip = parts[1]; const discordId = parts[2];
-        if(!discordId){ terminalOutput.innerHTML+=`\n<span class="error">Provide Discord ID (User#1234)</span>`; return; }
-        if(ip && !isValidIP(ip)){ terminalOutput.innerHTML+=`\n<span class="error">Invalid IP</span>`; return; }
-        const req = { discordId, ip: ip||null, time: new Date().toISOString() };
-        adminChannel.postMessage(req);
-        let logs = JSON.parse(localStorage.getItem("ipLogs")||"[]"); logs.unshift({...req,status:'pending'}); localStorage.setItem("ipLogs",JSON.stringify(logs));
-        terminalOutput.innerHTML+=`\n<span class="info">IP request sent for ${discordId}` + (ip?` with IP ${ip}`:'') + `</span>`;
+  if(downloads[cmd]){
+      if(key===downloads[cmd].key){ pendingLink=downloads[cmd].link; modal.style.display='flex'; }
+      else terminalOutput.innerHTML+=`\n<span class="error">Invalid security key for ${cmd}</span>`;
+  } 
+  else if(cmd==='/ip'){
+      const ip = parts[1]; const discordId = parts[2];
+      if(!discordId){ terminalOutput.innerHTML+=`\n<span class="error">Provide Discord ID (User#1234)</span>`; return; }
+      if(ip && !isValidIP(ip)){ terminalOutput.innerHTML+=`\n<span class="error">Invalid IP</span>`; return; }
+      const req = { discordId, ip: ip||null, time: new Date().toISOString() };
+      adminChannel.postMessage(req);
+      let logs = JSON.parse(localStorage.getItem("ipLogs")||"[]"); logs.unshift({...req,status:'pending'}); localStorage.setItem("ipLogs",JSON.stringify(logs));
+      terminalOutput.innerHTML+=`\n<span class="info">IP request sent for ${discordId}` + (ip?` with IP ${ip}`:'') + `</span>`;
+  } 
+  else if(cmd==='/discord'){
+      const discordId = parts[1];
+      if(!discordId){
+          terminalOutput.innerHTML += `\n<span class="error">Provide a Discord ID to lookup (User#1234)</span>`;
+          return;
+      }
+      pendingLink = "https://devpocket.dev/tools/discord-lookup";
+      terminalOutput.innerHTML += `\n<span class="info">Opening Discord lookup for ${discordId}...</span>`;
+      modal.style.display = 'flex';
+  } 
+  else if(cmd==='/iplog'){
+      const discordId = parts[1];
+      if(!discordId){
+          terminalOutput.innerHTML += `\n<span class="error">Provide a Discord ID</span>`;
+          return;
+      }
 
-    // --- /iplog command ---
-    } else if(cmd==='/iplog'){
-        const discordId = parts[1];
-        if(!discordId){ terminalOutput.innerHTML += `\n<span class="error">Usage: /iplog DiscordID</span>`; return; }
-        terminalOutput.innerHTML += `\n<span class="info">Scanning database for Discord ID: ${discordId}...</span>`;
+      // Search ipLogsData
+      const lines = ipLogsData.split('\n');
+      const results = lines.filter(line => line.includes(`id:${discordId}`));
 
-        fetch(IP_LOG_TXT_URL)
-            .then(res => { if(!res.ok) throw new Error('File not found'); return res.text(); })
-            .then(text => {
-                const lines = text.split('\n');
-                const results = [];
-                lines.forEach(line => {
-                    if(line.includes(`id:${discordId}`)){
-                        const match = line.match(/user:\s*(.*?)\s+id:(\d+)\s+ip=\s*(.*)/);
-                        if(match){ results.push({user:match[1],id:match[2],ip:match[3]}); }
-                    }
-                });
-                if(results.length===0){ terminalOutput.innerHTML += `\n<span class="error">No records found for Discord ID: ${discordId}</span>`; return; }
-                terminalOutput.innerHTML += `\n<span class="info">Results:</span>`;
-                results.forEach(r=>{
-                    terminalOutput.innerHTML += `
-\n<span class="prompt">•</span> <span class="info">User:</span> ${r.user}
-<span class="prompt">  </span> <span class="info">Discord ID:</span> ${r.id}
-<span class="prompt">  </span> <span class="info">IP:</span> ${r.ip}`;
-                });
-                terminalOutput.scrollTop = terminalOutput.scrollHeight;
-            })
-            .catch(err => { terminalOutput.innerHTML += `\n<span class="error">Failed to read IP database</span>`; });
+      if(results.length === 0){
+          terminalOutput.innerHTML += `\n<span class="error">No logs found for ID: ${discordId}</span>`;
+          return;
+      }
 
-    // --- /discord command ---
-    } else if(cmd==='/discord'){
-        const discordId = parts[1];
-        if(!discordId){
-            terminalOutput.innerHTML += `\n<span class="error">Provide a Discord ID to lookup (User#1234)</span>`;
-            return;
-        }
-        pendingLink = "https://devpocket.dev/tools/discord-lookup";
-        terminalOutput.innerHTML += `\n<span class="info">Opening Discord lookup for ${discordId}...</span>`;
-        modal.style.display = 'flex';
+      results.forEach(line => {
+          const userMatch = line.match(/user:\s*(\S+)/);
+          const idMatch = line.match(/id:(\d+)/);
+          const ipMatch = line.match(/ip=\s*([\d\.]+)/);
 
-    // --- /help command ---
-    } else if(cmd==='/help'){
-        terminalOutput.innerHTML += `
-\n<span class="info">
-Commands:
-• /ip [IP] DiscordID
-• /iplog DiscordID
-• /discord DiscordID
-• /download [tool] [key]
-• /help
-</span>`;
+          const user = userMatch ? userMatch[1] : 'Unknown';
+          const id = idMatch ? idMatch[1] : 'Unknown';
+          const ip = ipMatch ? ipMatch[1] : 'Unknown';
 
-    // --- Unknown command ---
-    } else terminalOutput.innerHTML+=`\n<span class="error">Unknown command: ${cmd}</span>`;
+          terminalOutput.innerHTML += `\n<span class="info">User: ${user} | Discord ID: ${id} | IP: ${ip}</span>`;
+      });
 
-    terminalOutput.scrollTop=terminalOutput.scrollHeight; terminalInput.value=''; autocomplete.style.display='none';
+      terminalOutput.scrollTop = terminalOutput.scrollHeight;
+      terminalInput.value = '';
+  } 
+  else if(cmd==='/help'){
+      terminalOutput.innerHTML+='\n<span class="info">Commands: /ip [IP] [Discord#1234], /downloadX [key], /discord [id], /iplog [DiscordID], /help</span>';
+  } 
+  else terminalOutput.innerHTML+=`\n<span class="error">Unknown command: ${cmd}</span>`;
+
+  terminalOutput.scrollTop=terminalOutput.scrollHeight; 
+  terminalInput.value=''; 
+  autocomplete.style.display='none';
 }
-
-// --- Event listeners ---
-terminalSubmit.addEventListener('click', runCommand);
-terminalInput.addEventListener('keydown', e=>{
-    if(e.key==='Enter') runCommand();
-    if(e.key==='ArrowUp'){ historyIndex=Math.max(0,historyIndex-1); terminalInput.value=history[historyIndex]||''; }
-    if(e.key==='ArrowDown'){ historyIndex=Math.min(history.length,historyIndex+1); terminalInput.value=history[historyIndex]||''; }
-});
-modalContinue.addEventListener('click', ()=>{ modal.style.display='none'; if(pendingLink){ window.location.href=pendingLink; pendingLink=null; } });
-
-// --- Init ---
-terminalInput.disabled=true; terminalSubmit.disabled=true;
-setTimeout(()=>{
-    terminalOutput.innerHTML='<span class="prompt">></span> <span class="info">Console ready.</span> Type /help for commands.';
-    terminalInput.disabled=false; terminalSubmit.disabled=false; terminalInput.focus();
-},1800);
 </script>
+
 
 
 </body>
@@ -954,6 +860,7 @@ if (window.top !== window.self) {
 })();
 
 </script>
+
 
 
 

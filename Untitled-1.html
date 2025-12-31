@@ -5,405 +5,251 @@
 <title>Engine6.0</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
-body { background: radial-gradient(1200px 800px at 10% 10%, #141826, #0f1115); color: #fff; display: flex; height: 100vh; overflow: hidden; }
-#snowCanvas { position: fixed; inset:0; z-index:0; pointer-events:none; }
-/* Sidebar */
-.sidebar { width: 240px; background: rgba(28,28,28,0.85); backdrop-filter: blur(10px); display: flex; flex-direction: column; padding: 30px 20px; box-shadow: 2px 0 15px rgba(0,0,0,0.5); z-index:2; position:relative; }
-.sidebar h2 { color: #22c55e; margin-bottom: 40px; font-size: 22px; font-weight: 700; letter-spacing: 1px; }
-.sidebar a { color: #ccc; text-decoration: none; margin: 10px 0; padding: 12px 16px; border-radius: 10px; font-weight: 500; display: flex; align-items: center; transition: all 0.25s ease; cursor: pointer; }
-.sidebar a:hover { background: rgba(34,197,94,0.15); color: #22c55e; transform: translateX(3px); box-shadow: inset 0 0 0 1px rgba(34,197,94,0.35); }
-/* Terminal */
-.terminal { position: fixed; left: 50%; top: 50%; width: 860px; max-width: 95%; height: 520px; background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03)); backdrop-filter: blur(24px) saturate(140%); border-radius: 22px; box-shadow: 0 20px 60px rgba(0,0,0,0.75); border: 1px solid rgba(255,255,255,0.12); display: flex; flex-direction: column; overflow: hidden; resize: both; z-index:3; }
-.terminal.centered { transform: translate(-50%, -50%); }
-.terminal::after{ content:""; position:absolute; inset:0; pointer-events:none; background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.06), transparent 70%); }
-.terminal-header { background: rgba(34,197,94,0.12); padding: 12px 16px; color: #22c55e; font-weight: 600; cursor: move; display: flex; justify-content: space-between; align-items: center; letter-spacing: .3px; }
-.terminal-output { flex: 1; background: rgba(0,0,0,0.6); margin: 12px; border-radius: 14px; padding: 16px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #e6edf3; overflow-y: auto; white-space: pre-wrap; line-height: 1.5; }
-.prompt { color:#22c55e; }
-.error { color:#ff6b6b; }
-.info { color:#9fe0b3; }
-.terminal-input { display: flex; margin: 12px; gap: 10px; position: relative; }
-.terminal-input input { flex: 1; padding: 12px 16px; border-radius: 14px; border: 1px solid rgba(34,197,94,0.6); background: rgba(17,17,17,0.65); color: #f1f7fb; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; z-index:5; position: relative; }
-.terminal-input input::placeholder{ color:#9fb4aa; }
-.terminal-input button { padding: 12px 22px; border-radius: 14px; background: #22c55e; border: none; color: #111; font-weight: 700; cursor: pointer; transition: transform .15s ease, box-shadow .15s ease; }
-.terminal-input button:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(34,197,94,0.45); }
-/* Discord button */
-.discord-btn { width: 22px; height: 22px; display:inline-block; background: url('https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/discord.svg') no-repeat center/contain; cursor:pointer; transition: transform 0.2s, filter 0.2s; }
-.discord-btn:hover { transform: scale(1.2); filter: drop-shadow(0 0 6px #22c55e); }
-/* Warning Modal */
-.modal-bg { position: fixed; inset:0; background: rgba(0,0,0,0.65); display: none; align-items: center; justify-content: center; z-index: 999; }
-.modal { background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.04)); backdrop-filter: blur(20px) saturate(140%); border-radius: 18px; width: 420px; max-width: 92%; border: 1px solid rgba(255,255,255,0.14); box-shadow: 0 20px 50px rgba(0,0,0,0.7); padding: 28px 32px; display: flex; flex-direction: column; gap: 18px; }
-.modal h3 { color: #22c55e; font-size: 20px; letter-spacing:.3px; }
-.modal p { color:#e6edf3; }
-.modal button { background: #22c55e; color: #111; padding: 12px 18px; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; }
-.modal button:hover { box-shadow: 0 6px 18px rgba(34,197,94,0.45); }
-/* Autocomplete */
-.autocomplete { position: absolute; bottom: 50px; left: 0; right: 0; background: rgba(0,0,0,0.9); border-radius: 8px; padding: 4px 0; display: none; z-index: 10; max-height: 200px; overflow-y: auto; }
-.autocomplete div { padding: 6px 12px; cursor: pointer; color:#f1f7fb; }
-.autocomplete div:hover { background: rgba(34,197,94,0.2); }
-/* ===== REAL HOME SCREEN (NO TERMINAL IMPACT) ===== */
-.home {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2;
-  transition: opacity .35s ease;
-}
+* { margin:0; padding:0; box-sizing:border-box; font-family:'Inter', sans-serif; }
+body { background: radial-gradient(1200px 800px at 10% 10%, #141826, #0f1115); color:#fff; height:100vh; overflow:hidden; }
 
-.home.hidden {
-  opacity: 0;
-  pointer-events: none;
-}
+/* CANVAS */
+#snowCanvas { position:fixed; inset:0; z-index:0; pointer-events:none; }
 
-.home.visible {
-  opacity: 1;
-  pointer-events: auto;
-}
+/* SIDEBAR */
+.sidebar { width:240px; background:rgba(28,28,28,0.85); backdrop-filter: blur(10px); display:flex; flex-direction:column; padding:30px 20px; box-shadow:2px 0 15px rgba(0,0,0,0.5); z-index:2; position:relative; }
+.sidebar h2 { color:#22c55e; margin-bottom:40px; font-size:22px; font-weight:700; letter-spacing:1px; }
+.sidebar a { color:#ccc; text-decoration:none; margin:10px 0; padding:12px 16px; border-radius:10px; font-weight:500; display:flex; align-items:center; transition:all 0.25s ease; cursor:pointer; }
+.sidebar a:hover { background: rgba(34,197,94,0.15); color:#22c55e; transform:translateX(3px); box-shadow: inset 0 0 0 1px rgba(34,197,94,0.35); }
 
-.home-card {
-  width: 720px;
-  max-width: 92%;
+/* SCREENS */
+.home, #archiveScreen, #infoScreen, #terminal { 
+  position:fixed; inset:0; display:none; flex-direction:column; justify-content:center; align-items:center; z-index:2; 
+}
+.home.visible, #archiveScreen.visible, #infoScreen.visible, #terminal.visible { display:flex; }
+
+.home-card, .info-card { 
   background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
-  backdrop-filter: blur(24px) saturate(140%);
-  border-radius: 24px;
-  padding: 42px;
-  text-align: center;
-  box-shadow: 0 30px 80px rgba(0,0,0,0.7);
-  border: 1px solid rgba(255,255,255,0.12);
+  backdrop-filter: blur(24px) saturate(140%); border-radius:24px; padding:42px; text-align:center; box-shadow:0 30px 80px rgba(0,0,0,0.7); border:1px solid rgba(255,255,255,0.12);
 }
+.home-card h1, .info-card { color:#22c55e; }
 
-.home-card h1 {
-  color: #22c55e;
-  font-size: 42px;
-  margin-bottom: 12px;
-}
+.badge { display:inline-block; background: rgba(34,197,94,0.2); color:#22c55e; padding:6px 16px; border-radius:999px; font-weight:600; margin-bottom:18px; }
+.status-row { display:flex; justify-content:center; gap:20px; margin-bottom:26px; }
+.status { background: rgba(34,197,94,0.12); padding:12px 22px; border-radius:14px; color:#9fe0b3; font-weight:500; display:flex; align-items:center; justify-content:center; position:relative; transition:all 0.3s ease; }
+.status:hover { background: rgba(34,197,94,0.25); color:#22c55e; transform: translateY(-3px); box-shadow:0 8px 20px rgba(34,197,94,0.35); }
 
-.subtitle {
-  color: #9fe0b3;
-  margin-bottom: 26px;
-}
+.news { background:rgba(0,0,0,0.45); padding:18px; border-radius:16px; text-align:left; margin-bottom:30px; font-size:14px; }
 
-.badge {
-  display:inline-block;
-  background: rgba(34,197,94,0.2);
-  color:#22c55e;
-  padding:6px 16px;
-  border-radius:999px;
-  font-weight:600;
-  margin-bottom:18px;
-}
+.open-btn { background:#22c55e; border:none; padding:14px 28px; border-radius:16px; font-weight:700; cursor:pointer; margin:5px; }
+.open-btn:hover { box-shadow:0 8px 24px rgba(34,197,94,0.45); }
 
-.status-row {
-  display:flex;
-  justify-content:center;
-  gap:20px;
-  margin-bottom:26px;
-}
+.file-item { background:rgba(34,197,94,0.12); padding:10px 14px; border-radius:12px; margin-bottom:10px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; }
+.file-item:hover { background: rgba(34,197,94,0.25); transform: translateY(-1px); transition:0.2s; }
 
-.status {
-  background:rgba(34,197,94,0.12);
-  padding:12px 22px;
-  border-radius:14px;
-  color:#9fe0b3;
-}
+.terminal { width:860px; max-width:95%; height:520px; background:linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03)); backdrop-filter: blur(24px) saturate(140%); border-radius:22px; box-shadow:0 20px 60px rgba(0,0,0,0.75); border:1px solid rgba(255,255,255,0.12); display:flex; flex-direction:column; overflow:hidden; z-index:3; }
+.terminal-header { background: rgba(34,197,94,0.12); padding:12px 16px; color:#22c55e; font-weight:600; cursor:move; display:flex; justify-content:space-between; align-items:center; }
+.terminal-output { flex:1; background:rgba(0,0,0,0.6); margin:12px; border-radius:14px; padding:16px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; color:#e6edf3; overflow-y:auto; white-space:pre-wrap; line-height:1.5; }
+.terminal-input { display:flex; margin:12px; gap:10px; position:relative; }
+.terminal-input input { flex:1; padding:12px 16px; border-radius:14px; border:1px solid rgba(34,197,94,0.6); background: rgba(17,17,17,0.65); color:#f1f7fb; }
+.terminal-input button { padding:12px 22px; border-radius:14px; background:#22c55e; border:none; color:#111; font-weight:700; cursor:pointer; }
 
-.news {
-  background:rgba(0,0,0,0.45);
-  padding:18px;
-  border-radius:16px;
-  text-align:left;
-  margin-bottom:30px;
-  font-size:14px;
-}
-
-.news h4 {
-  color:#22c55e;
-  margin-bottom:8px;
-}
-
-.open-btn {
-  background:#22c55e;
-  border:none;
-  padding:14px 28px;
-  border-radius:16px;
-  font-weight:700;
-  cursor:pointer;
-}
-.open-btn:hover {
-  box-shadow:0 8px 24px rgba(34,197,94,0.45);
-}
-.file-item:hover {
-  background: rgba(34,197,94,0.25);
-  transform: translateY(-1px);
-  transition: 0.2s;
-}
-.status-row {
-  display: flex;
-  justify-content: center;
-  gap: 20px;
-  margin-bottom: 26px;
-}
-
-.status {
-  background: rgba(34,197,94,0.12);
-  padding: 12px 22px;
-  border-radius: 14px;
-  color: #9fe0b3;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-  cursor: default;
-  position: relative;
-}
-
-/* Hover effect */
-.status:hover {
-  background: rgba(34,197,94,0.25);
-  color: #22c55e;
-  transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(34,197,94,0.35);
-}
-
-/* Optional: subtle pulse animation on hover */
-.status:hover::after {
-  content: '';
-  position: absolute;
-  inset: -4px;
-  border-radius: 18px;
-  border: 1px solid rgba(34,197,94,0.35);
-  animation: pulse 1s ease-out;
-}
-
-@keyframes pulse {
-  0% { transform: scale(0.95); opacity: 0.7; }
-  70% { transform: scale(1.1); opacity: 0; }
-  100% { transform: scale(1); opacity: 0; }
-}
-.status {
-  background: rgba(34,197,94,0.12);
-  padding: 12px 22px;
-  border-radius: 14px;
-  color: #9fe0b3;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-  cursor: default;
-  position: relative;
-}
-
-/* Animate only the emoji */
-.status .status-emoji {
-  display: inline-block;
-  font-size: 18px;
-  margin-right: 8px;
-  animation: glowPulse 1.8s infinite ease-in-out;
-}
-
-/* Glow pulse keyframes */
-@keyframes glowPulse {
-  0% { text-shadow: 0 0 4px #22c55e, 0 0 6px rgba(34,197,94,0.5); }
-  50% { text-shadow: 0 0 8px #22c55e, 0 0 14px rgba(34,197,94,0.6); }
-  100% { text-shadow: 0 0 4px #22c55e, 0 0 6px rgba(34,197,94,0.5); }
-}
-.info-card {
-  user-select: none;
-  transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
-}
-.info-card:hover {
-  background: rgba(34,197,94,0.15);
-  color: #22c55e;
-}
-
-.info-card {
-  user-select: none;
-  transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
-  background: rgba(255,255,255,0.05);
-  backdrop-filter: blur(12px) saturate(140%);
-  border-radius: 12px;
-  padding: 14px 18px;
-  flex: 1 1 calc(45% - 16px);
-  color: #9fe0b3;
-  font-weight: 600;
-  text-align: center;
-  cursor: pointer;
-}
-
-.info-card:hover {
-  background: rgba(34,197,94,0.15);
-  color: #22c55e;
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(34,197,94,0.35);
-}
-
-
+/* MODAL */
+.modal-bg { position:fixed; inset:0; background: rgba(0,0,0,0.65); display:none; align-items:center; justify-content:center; z-index:999; }
+.modal { background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.04)); backdrop-filter: blur(20px) saturate(140%); border-radius:18px; width:420px; max-width:92%; border:1px solid rgba(255,255,255,0.14); box-shadow:0 20px 50px rgba(0,0,0,0.7); padding:28px 32px; display:flex; flex-direction:column; gap:18px; }
+.modal h3 { color:#22c55e; font-size:20px; }
+.modal button { background:#22c55e; color:#111; padding:12px 18px; border:none; border-radius:12px; font-weight:700; cursor:pointer; }
+.modal button:hover { box-shadow:0 6px 18px rgba(34,197,94,0.45); }
 </style>
 </head>
 <body>
-  
-<!-- HOME SCREEN (NOT A TERMINAL) -->
-<div id="homeScreen" class="home hidden">
+
+<!-- HOME SCREEN -->
+<div id="homeScreen" class="home">
   <div class="home-card">
     <span class="badge">v1.1</span>
-
     <h1>Engine6.0</h1>
-    <p class="subtitle">
-      Secure Data Base Made by iTzzzzduckey.
-    </p>
-
+    <p class="subtitle">Secure Data Base Made by iTzzzzduckey.</p>
     <div class="status-row">
       <div class="status">🟢 Online</div>
       <div class="status">🔐 Secure</div>
     </div>
-
     <div class="news">
       <h4>Latest Updates</h4>
-      • Added info page fixed screen overlapping 2 times once for archive and one for info<br>
-      • Added File Archive fixed screen overlapping with archive<br>
-      • Fixed all downloads and fixed ip lookup Request Also fixed discord id lookup
+      • Added info page & archive fixes<br>
+      • Fixed all downloads and IP lookup<br>
     </div>
-
     <button class="open-btn" onclick="showConsole()">Open Console</button>
     <button class="open-btn" onclick="showArchive()">Open Archive</button>
-    <button class="open-btn" onclick="showInfo()">Open info</button>
+    <button class="open-btn" onclick="showInfo()">Open Info</button>
   </div>
 </div>
 
-<div id="archiveScreen" class="home hidden">
+<!-- ARCHIVE SCREEN -->
+<div id="archiveScreen" class="home">
   <div class="home-card">
     <h1>Archive</h1>
     <p class="subtitle">Upload files and store them locally.</p>
-
     <button class="open-btn" onclick="showUploadForm()">Upload File</button>
-
     <div id="uploadForm" style="display:none; margin-top:20px; text-align:left;">
       <label>Gofile Link (required)</label><br>
-      <input type="text" id="uploadLink" placeholder="https://gofile.io/..." style="width:100%; margin-bottom:10px; padding:8px;"><br>
-
+      <input type="text" id="uploadLink" placeholder="https://gofile.io/..."><br>
       <label>File Name (required)</label><br>
-      <input type="text" id="uploadName" placeholder="My File" style="width:100%; margin-bottom:10px; padding:8px;"><br>
-
+      <input type="text" id="uploadName" placeholder="My File"><br>
       <label>Password (optional)</label><br>
-      <input type="text" id="uploadPassword" placeholder="Password" style="width:100%; margin-bottom:10px; padding:8px;"><br>
-
+      <input type="text" id="uploadPassword" placeholder="Password"><br>
       <label>Discord ID (required)</label><br>
-      <input type="text" id="uploadDiscord" placeholder="User#1234" style="width:100%; margin-bottom:10px; padding:8px;"><br>
-
+      <input type="text" id="uploadDiscord" placeholder="User#1234"><br>
       <button class="open-btn" onclick="saveUpload()">Submit</button>
-      <button class="open-btn" style="background:#ff6b6b; margin-top:10px;" onclick="hideUploadForm()">Cancel</button>
+      <button class="open-btn" style="background:#ff6b6b;" onclick="hideUploadForm()">Cancel</button>
     </div>
-
-    <div class="file-list" id="archiveList" style="max-height:300px; overflow-y:auto; margin-top:20px;"></div>
-
-    <button class="open-btn" onclick="showHome()" style="margin-top:20px;">Back to Home</button>
+    <div id="archiveList" style="max-height:300px; overflow-y:auto; margin-top:20px;"></div>
+    <button class="open-btn" onclick="showHome()">Back to Home</button>
   </div>
 </div>
-<div id="infoScreen" class="home hidden">
+
+<!-- INFO SCREEN -->
+<div id="infoScreen" class="home">
   <div class="home-card">
     <h1>Info & Links</h1>
     <p class="subtitle">Quick access to all relevant links</p>
-
     <div id="infoList" style="display:flex; flex-wrap:wrap; gap:16px; margin-top:20px;"></div>
-
-    <button class="open-btn" onclick="showHome()" style="margin-top:20px;">Back to Home</button>
+    <button class="open-btn" onclick="showHome()">Back to Home</button>
   </div>
 </div>
 
-<canvas id="snowCanvas"></canvas>
-
-<div class="sidebar">
-  <h2>Engine6.0</h2>
-<a onclick="showHome()">Home</a>
-<a onclick="showConsole()">Cmd Console</a>
-<a onclick="showArchive()">Archive</a>
-<a onclick="showInfo()">Info</a>
-
-</div>
-
-<div class="terminal centered" id="terminal">
+<!-- TERMINAL -->
+<div id="terminal" class="terminal">
   <div class="terminal-header" id="terminalHeader">
     Glass Command Console
     <span class="discord-btn" id="discordBtn"></span>
   </div>
-  <div class="terminal-output" id="terminalOutput">Initializing panel...
-Waiting...
-Waiting...</div>
+  <div class="terminal-output" id="terminalOutput">Initializing panel... Waiting...</div>
   <div class="terminal-input">
-    <input type="text" id="terminalInput" placeholder="type a command and press enter" disabled />
-    <button id="terminalSubmit" disabled>Run</button>
-    <div class="autocomplete" id="autocomplete"></div>
+    <input type="text" id="terminalInput" placeholder="type a command and press enter" />
+    <button id="terminalSubmit">Run</button>
   </div>
 </div>
 
+<!-- MODAL -->
 <div class="modal-bg" id="modal">
   <div class="modal">
     <h3>Security Warning</h3>
-    <p>You are about to run a sensitive operation.</p>
-    <button onclick="closeModal()">Acknowledge</button>
+    <p>You are about to continue to an external destination. Proceed only if you trust this action.</p>
+    <button id="modalContinue">Continue</button>
   </div>
 </div>
 
-<script>
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <h2>Engine6.0</h2>
+  <a onclick="showHome()">Home</a>
+  <a onclick="showConsole()">Cmd Console</a>
+  <a onclick="showArchive()">Archive</a>
+  <a onclick="showInfo()">Info</a>
+</div>
 
-// ===== TERMINAL COMMANDS =====
+<script>
+// -------------- SCREEN SWITCHING --------------
+function hideAllScreens(){
+  ['homeScreen','archiveScreen','infoScreen','terminal'].forEach(id=>{
+    const el = document.getElementById(id);
+    el.classList.remove('visible');
+  });
+}
+
+function showHome(){ hideAllScreens(); document.getElementById('homeScreen').classList.add('visible'); }
+function showArchive(){ hideAllScreens(); document.getElementById('archiveScreen').classList.add('visible'); renderArchive(); }
+function showInfo(){ hideAllScreens(); document.getElementById('infoScreen').classList.add('visible'); renderInfo(); }
+function showConsole(){ hideAllScreens(); document.getElementById('terminal').classList.add('visible'); terminalInput.focus(); }
+
+// ---------------- TERMINAL ------------------
 const terminalOutput = document.getElementById('terminalOutput');
 const terminalInput = document.getElementById('terminalInput');
 const terminalSubmit = document.getElementById('terminalSubmit');
+const modal = document.getElementById('modal');
+const modalContinue = document.getElementById('modalContinue');
+let pendingLink = null;
 
-terminalInput.disabled = false;
-terminalSubmit.disabled = false;
+// Download commands
+const downloads = {
+  '/download Test': {key:'ABC123', link:'https://example.com/test'}
+};
+const commandList = Object.keys(downloads).concat(['/ip','/iplog','/help','/discord']);
 
-function logOutput(text, type='info') {
-  const span = document.createElement('span');
-  span.className = type;
-  span.textContent = text + "\n";
-  terminalOutput.appendChild(span);
-  terminalOutput.scrollTop = terminalOutput.scrollHeight;
-}
-
-// Command handler
-function handleCommand(cmd) {
-  const args = cmd.split(' ');
-  switch(args[0].toLowerCase()) {
-    case '/help':
-      logOutput("Available commands: /help, /iplog, /clear, /about");
-      break;
-    case '/clear':
-      terminalOutput.innerHTML = '';
-      break;
-    case '/about':
-      logOutput("Engine6.0 Panel - Secure Data Base by iTzzzzduckey");
-      break;
-    case '/iplog':
-      fetch('ips.txt')
-        .then(response => response.text())
-        .then(text => logOutput("IP Log:\n" + text))
-        .catch(() => logOutput("Failed to load IP log.", 'error'));
-      break;
-    default:
-      logOutput("Unknown command: " + cmd, 'error');
-  }
-}
-
-terminalSubmit.addEventListener('click', () => {
-  const cmd = terminalInput.value.trim();
-  if(cmd) { logOutput("> " + cmd, 'prompt'); handleCommand(cmd); terminalInput.value=''; }
+// Autocomplete
+terminalInput.addEventListener('input',()=>{
+  // Can add autocomplete later
 });
 
-terminalInput.addEventListener('keypress', e => { if(e.key==='Enter'){ terminalSubmit.click(); } });
+// Command runner
+terminalSubmit.addEventListener('click', runCommand);
+terminalInput.addEventListener('keydown', e=>{
+  if(e.key==='Enter') runCommand();
+});
 
-</script>
-<script>
-function showHome(){document.getElementById('homeScreen').classList.add('visible');document.getElementById('homeScreen').classList.remove('hidden');document.getElementById('archiveScreen').classList.add('hidden');document.getElementById('archiveScreen').classList.remove('visible');document.getElementById('infoScreen').classList.add('hidden');document.getElementById('infoScreen').classList.remove('visible');document.getElementById('terminal').style.display='none';}
-function showArchive(){document.getElementById('archiveScreen').classList.add('visible');document.getElementById('archiveScreen').classList.remove('hidden');document.getElementById('homeScreen').classList.add('hidden');document.getElementById('homeScreen').classList.remove('visible');document.getElementById('infoScreen').classList.add('hidden');document.getElementById('infoScreen').classList.remove('visible');document.getElementById('terminal').style.display='none';}
-function showInfo(){document.getElementById('infoScreen').classList.add('visible');document.getElementById('infoScreen').classList.remove('hidden');document.getElementById('homeScreen').classList.add('hidden');document.getElementById('homeScreen').classList.remove('visible');document.getElementById('archiveScreen').classList.add('hidden');document.getElementById('archiveScreen').classList.remove('visible');document.getElementById('terminal').style.display='none';}
-function showConsole(){document.getElementById('terminal').style.display='flex';document.getElementById('homeScreen').classList.add('hidden');document.getElementById('homeScreen').classList.remove('visible');document.getElementById('archiveScreen').classList.add('hidden');document.getElementById('archiveScreen').classList.remove('visible');document.getElementById('infoScreen').classList.add('hidden');document.getElementById('infoScreen').classList.remove('visible');}
-function closeModal(){document.getElementById('modal').style.display='none';}
+function runCommand(){
+  const cmdLine = terminalInput.value.trim();
+  if(!cmdLine) return;
+  terminalOutput.innerHTML+=`\n> ${cmdLine}`;
+  const parts = cmdLine.split(' ');
+  const cmd = parts[0];
+  
+  if(downloads[cmd]){
+    if(parts[1]===downloads[cmd].key){
+      pendingLink=downloads[cmd].link; modal.style.display='flex';
+    } else terminalOutput.innerHTML+='\nInvalid key';
+  } else if(cmd==='/help'){
+    terminalOutput.innerHTML+='\nCommands: /download, /ip, /iplog, /discord, /help';
+  } else {
+    terminalOutput.innerHTML+='\nUnknown command';
+  }
+  terminalOutput.scrollTop = terminalOutput.scrollHeight;
+  terminalInput.value='';
+}
+
+// Modal
+modalContinue.addEventListener('click', ()=>{
+  modal.style.display='none';
+  if(pendingLink){ window.open(pendingLink,'_blank'); pendingLink=null; }
+});
+
+// ---------------- ARCHIVE -------------------
+let archiveFiles = JSON.parse(localStorage.getItem('archiveFiles')||'[]');
+function renderArchive(){
+  const archiveList = document.getElementById('archiveList');
+  archiveList.innerHTML='';
+  if(archiveFiles.length===0){ archiveList.innerHTML='<p>No files saved yet.</p>'; return; }
+  archiveFiles.forEach((f,i)=>{
+    const div = document.createElement('div'); div.className='file-item';
+    div.innerHTML=`<span><strong>${f.name}</strong> - Discord: ${f.discordId}</span>
+                   <button onclick="deleteArchive(${i})">Delete</button>`;
+    div.querySelector('button').addEventListener('click', e=>{ e.stopPropagation(); deleteArchive(i); });
+    div.addEventListener('click', ()=>{ pendingLink=f.link; modal.style.display='flex'; });
+    archiveList.appendChild(div);
+  });
+}
+function showUploadForm(){ document.getElementById('uploadForm').style.display='block'; }
+function hideUploadForm(){ document.getElementById('uploadForm').style.display='none'; }
+function saveUpload(){
+  const link=document.getElementById('uploadLink').value.trim();
+  const name=document.getElementById('uploadName').value.trim();
+  const discordId=document.getElementById('uploadDiscord').value.trim();
+  if(!link||!name||!discordId){ alert('Fill all required fields'); return; }
+  archiveFiles.push({link,name,discordId});
+  localStorage.setItem('archiveFiles',JSON.stringify(archiveFiles));
+  hideUploadForm(); renderArchive();
+}
+function deleteArchive(i){ archiveFiles.splice(i,1); localStorage.setItem('archiveFiles',JSON.stringify(archiveFiles)); renderArchive(); }
+
+// ---------------- INFO -------------------
+const links=[{name:'Discord',url:'https://discord.gg/SkQg73PyG6'}];
+function renderInfo(){
+  const infoList=document.getElementById('infoList'); infoList.innerHTML='';
+  links.forEach(l=>{
+    const card=document.createElement('div'); card.className='info-card'; card.innerText=l.name;
+    card.addEventListener('click',()=>window.open(l.url,'_blank'));
+    infoList.appendChild(card);
+  });
+}
+
+// Start on home
+showHome();
 </script>
 </body>
 </html>

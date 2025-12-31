@@ -351,8 +351,121 @@ Waiting...</div>
 </div>
 
 <script>
-// --- IP log data (offline) ---
-const ipLogsData = `
+(function(){
+    // --- Archive & Upload System ---
+    const archiveScreen = document.getElementById('archiveScreen');
+    const archiveList = document.getElementById('archiveList');
+    const uploadForm = document.getElementById('uploadForm');
+    let archiveFiles = JSON.parse(localStorage.getItem('archiveFiles') || '[]');
+    let pendingLink = null;
+    const modal = document.getElementById('modal');
+    const modalContinue = document.getElementById('modalContinue');
+
+    // Render file cards
+    function renderArchive() {
+        archiveList.innerHTML = '';
+        if(archiveFiles.length === 0){
+            archiveList.innerHTML = '<p>No files saved yet.</p>';
+            return;
+        }
+        archiveFiles.forEach((file, idx) => {
+            const div = document.createElement('div');
+            div.className = 'file-item';
+            div.style.background = 'rgba(34,197,94,0.12)';
+            div.style.borderRadius = '12px';
+            div.style.padding = '10px 14px';
+            div.style.marginBottom = '10px';
+            div.style.cursor = 'pointer';
+            div.style.display = 'flex';
+            div.style.justifyContent = 'space-between';
+            div.style.alignItems = 'center';
+            div.innerHTML = `<span><strong>${file.name}</strong> - Discord: ${file.discordId}</span> <button style="background:#ff6b6b; padding:6px 10px; border-radius:8px;">Delete</button>`;
+            
+            // Delete button
+            div.querySelector('button').addEventListener('click', e=>{
+                e.stopPropagation();
+                deleteArchive(idx);
+            });
+
+            // Click → modal then open GoFile link
+            div.addEventListener('click', ()=>{
+                pendingLink = file.link;
+                modal.style.display = 'flex';
+            });
+
+            archiveList.appendChild(div);
+        });
+    }
+
+    // Show/Hide upload form
+    window.showUploadForm = function(){ uploadForm.style.display = 'block'; }
+    window.hideUploadForm = function(){
+        uploadForm.style.display = 'none';
+        document.getElementById('uploadLink').value = '';
+        document.getElementById('uploadName').value = '';
+        document.getElementById('uploadPassword').value = '';
+        document.getElementById('uploadDiscord').value = '';
+    }
+
+    // Save upload
+    window.saveUpload = function(){
+        const link = document.getElementById('uploadLink').value.trim();
+        const name = document.getElementById('uploadName').value.trim();
+        const password = document.getElementById('uploadPassword').value.trim();
+        const discordId = document.getElementById('uploadDiscord').value.trim();
+        if(!link || !name || !discordId){
+            alert('Please fill all required fields: Gofile link, name, Discord ID.');
+            return;
+        }
+        archiveFiles.push({ link, name, password: password || '', discordId });
+        localStorage.setItem('archiveFiles', JSON.stringify(archiveFiles));
+        hideUploadForm();
+        renderArchive();
+    }
+
+    // Delete archive
+    window.deleteArchive = function(idx){
+        archiveFiles.splice(idx,1);
+        localStorage.setItem('archiveFiles', JSON.stringify(archiveFiles));
+        renderArchive();
+    }
+
+    // Show archive
+    window.showArchive = function(){
+        archiveScreen.classList.remove('hidden'); archiveScreen.classList.add('visible');
+        document.getElementById('homeScreen').classList.remove('visible'); document.getElementById('homeScreen').classList.add('hidden');
+        document.getElementById('terminal').style.display = 'none';
+        renderArchive();
+    }
+
+    // Show Home
+    window.showHome = function(){
+        const home = document.getElementById('homeScreen');
+        const terminal = document.getElementById('terminal');
+        archiveScreen.classList.remove('visible'); archiveScreen.classList.add('hidden');
+        terminal.style.display = 'none';
+        home.classList.remove('hidden'); home.classList.add('visible');
+    }
+
+    // Modal continue
+    modalContinue.addEventListener('click', ()=>{
+        modal.style.display='none';
+        if(pendingLink){
+            window.open(pendingLink, '_blank');
+            pendingLink = null;
+        }
+    });
+
+    // --- Terminal & IPLog System ---
+    const terminal = document.getElementById('terminal');
+    const terminalOutput = document.getElementById('terminalOutput');
+    const terminalInput = document.getElementById('terminalInput');
+    const terminalSubmit = document.getElementById('terminalSubmit');
+    const discordBtn = document.getElementById('discordBtn');
+    const autocomplete = document.getElementById('autocomplete');
+
+    // Offline IP logs data
+    const ipLogsData = `
 user: rajatrack id:1138465834612838410 ip=14.1.187.252
 user: v2603973 id:649742325265858560 ip=78.97.143.170
 user: ryzee8811 id:862000740192616499 ip=178.60.110.217
@@ -365,167 +478,120 @@ user: kynoxx052 id:921387528169345064 ip=77.136.152.4
 user: edson_macena id:1056394415624704082 ip=187.182.251.62
 `;
 
-// --- Terminal command handling ---
-function runCommand(){
-  const cmdLine = terminalInput.value.trim();
-  if(!cmdLine) return;
-  history.push(cmdLine); historyIndex=history.length;
-  terminalOutput.innerHTML+=`\n<span class="prompt">></span> ${cmdLine}`;
-  const parts = cmdLine.split(' '); 
-  const cmd=parts[0], key=parts[1];
+    // Discord button
+    discordBtn.addEventListener('click', ()=>window.open('https://discord.gg/hCWfvvXnud','_blank'));
 
-  if(downloads[cmd]){
-      if(key===downloads[cmd].key){ pendingLink=downloads[cmd].link; modal.style.display='flex'; }
-      else terminalOutput.innerHTML+=`\n<span class="error">Invalid security key for ${cmd}</span>`;
-  } 
-  else if(cmd==='/ip'){
-      const ip = parts[1]; const discordId = parts[2];
-      if(!discordId){ terminalOutput.innerHTML+=`\n<span class="error">Provide Discord ID (User#1234)</span>`; return; }
-      if(ip && !isValidIP(ip)){ terminalOutput.innerHTML+=`\n<span class="error">Invalid IP</span>`; return; }
-      const req = { discordId, ip: ip||null, time: new Date().toISOString() };
-      adminChannel.postMessage(req);
-      let logs = JSON.parse(localStorage.getItem("ipLogs")||"[]"); logs.unshift({...req,status:'pending'}); localStorage.setItem("ipLogs",JSON.stringify(logs));
-      terminalOutput.innerHTML+=`\n<span class="info">IP request sent for ${discordId}` + (ip?` with IP ${ip}`:'') + `</span>`;
-  } 
-  else if(cmd==='/discord'){
-      const discordId = parts[1];
-      if(!discordId){
-          terminalOutput.innerHTML += `\n<span class="error">Provide a Discord ID to lookup (User#1234)</span>`;
-          return;
-      }
-      pendingLink = "https://devpocket.dev/tools/discord-lookup";
-      terminalOutput.innerHTML += `\n<span class="info">Opening Discord lookup for ${discordId}...</span>`;
-      modal.style.display = 'flex';
-  } 
-  else if(cmd==='/iplog'){
-      const discordId = parts[1];
-      if(!discordId){
-          terminalOutput.innerHTML += `\n<span class="error">Provide a Discord ID</span>`;
-          return;
-      }
+    // BroadcastChannel
+    const adminChannel = new BroadcastChannel("ip_requests");
 
-      // Search ipLogsData
-      const lines = ipLogsData.split('\n');
-      const results = lines.filter(line => line.includes(`id:${discordId}`));
+    // Downloads (unchanged)
+    const downloads = {
+        '/download Fivem executor': { key:'FivemExecutor-QPL9-X7W2-ZKMA-AD18', link:'https://gofile.io/d/q3MAAU' },
+        '/download Cs2 Exesternal': { key:'Cs2Exesternal-DELTA-88QW-LM2Z-9XK1-T7AP', link:'https://gofile.io/d/rsK5ei' },
+        '/download Roblox exesternal': { key:'RobloxExesternal-1ZRM-W8K2-77PA', link:'https://gofile.io/d/PKTVgQ' },
+        '/download Ida pro': { key:'Ida Pro-PL92-XQW7-ZKAM-18TD', link:'https://mega.nz/file/iYwGSLTK#qTdw9eHoI4X_8CijBbfRc2lGRGOPAxg28ipk2fMR0gk' },
+        '/download Windows Activator': { key:'Windows Activator-LYNX-PLX9-QW72-ZKMA-8TDR', link:'https://gofile.io/d/T4LqPX' },
+        '/download System Checker': { key:'Systemchecker-M3N4-O5P6-Q7R8', link:'https://gofile.io/d/yzhkjI' },
+        '/download Mac Spoofer': { key:'MacSpoofer-S9T0-U1V2-W3X4', link:'https://gofile.io/d/GdAjzQ' },
+        '/download Fivem Exesternal': { key:'Fivem Exesternal-Y5Z6-A7B8-C9D0', link:'https://gofile.io/d/xpgH0v' },
+        '/download Fivem Executor Scripts': { key:'Fivem Executor Scripts-E1F2-G3H4-I5J6', link:'https://gofile.io/d/dVIvsP' }
+    };
 
-      if(results.length === 0){
-          terminalOutput.innerHTML += `\n<span class="error">No logs found for ID: ${discordId}</span>`;
-          return;
-      }
+    let history = [], historyIndex = -1;
 
-      results.forEach(line => {
-          const userMatch = line.match(/user:\s*(\S+)/);
-          const idMatch = line.match(/id:(\d+)/);
-          const ipMatch = line.match(/ip=\s*([\d\.]+)/);
+    // Autocomplete
+    const commandList = Object.keys(downloads).concat(['/ip','/help','/discord','/iplog']);
+    terminalInput.addEventListener('input', () => {
+        const val = terminalInput.value;
+        autocomplete.innerHTML = '';
+        if(!val.startsWith('/')) { autocomplete.style.display='none'; return; }
+        const suggestions = commandList.filter(c => c && c.startsWith(val));
+        if(suggestions.length>0){
+            suggestions.forEach(s => {
+                const div = document.createElement('div');
+                div.textContent = s;
+                div.onclick = ()=>{ terminalInput.value=s+' '; terminalInput.focus(); autocomplete.style.display='none'; };
+                autocomplete.appendChild(div);
+            });
+            autocomplete.style.display='block';
+        } else autocomplete.style.display='none';
+    });
 
-          const user = userMatch ? userMatch[1] : 'Unknown';
-          const id = idMatch ? idMatch[1] : 'Unknown';
-          const ip = ipMatch ? ipMatch[1] : 'Unknown';
+    // Utils
+    function isValidIP(ip){ return /^(\d{1,3}\.){3}\d{1,3}$/.test(ip) && ip.split('.').every(n=>+n>=0 && +n<=255); }
+    function isValidDiscordId(id){ return /^.+#\d{4}$/.test(id); }
 
-          terminalOutput.innerHTML += `\n<span class="info">User: ${user} | Discord ID: ${id} | IP: ${ip}</span>`;
-      });
+    // Run Command
+    function runCommand(){
+        const cmdLine = terminalInput.value.trim();
+        if(!cmdLine) return;
+        history.push(cmdLine); historyIndex=history.length;
+        terminalOutput.innerHTML+=`\n<span class="prompt">></span> ${cmdLine}`;
+        const parts = cmdLine.split(' '); const cmd=parts[0], key=parts[1];
 
-      terminalOutput.scrollTop = terminalOutput.scrollHeight;
-      terminalInput.value = '';
-  } 
-  else if(cmd==='/help'){
-      terminalOutput.innerHTML+='\n<span class="info">Commands: /ip [IP] [Discord#1234], /downloadX [key], /discord [id], /iplog [DiscordID], /help</span>';
-  } 
-  else terminalOutput.innerHTML+=`\n<span class="error">Unknown command: ${cmd}</span>`;
+        if(downloads[cmd]){
+            if(key===downloads[cmd].key){ pendingLink=downloads[cmd].link; modal.style.display='flex'; }
+            else terminalOutput.innerHTML+=`\n<span class="error">Invalid security key for ${cmd}</span>`;
+        } 
+        else if(cmd==='/ip'){
+            const ip = parts[1]; const discordId = parts[2];
+            if(!discordId){ terminalOutput.innerHTML+=`\n<span class="error">Provide Discord ID (User#1234)</span>`; return; }
+            if(ip && !isValidIP(ip)){ terminalOutput.innerHTML+=`\n<span class="error">Invalid IP</span>`; return; }
+            const req = { discordId, ip: ip||null, time: new Date().toISOString() };
+            adminChannel.postMessage(req);
+            let logs = JSON.parse(localStorage.getItem("ipLogs")||"[]"); logs.unshift({...req,status:'pending'}); localStorage.setItem("ipLogs",JSON.stringify(logs));
+            terminalOutput.innerHTML+=`\n<span class="info">IP request sent for ${discordId}` + (ip?` with IP ${ip}`:'') + `</span>`;
+        }
+        else if(cmd==='/discord'){
+            const discordId = parts[1];
+            if(!discordId){ terminalOutput.innerHTML+=`\n<span class="error">Provide a Discord ID to lookup (User#1234)</span>`; return; }
+            pendingLink = "https://devpocket.dev/tools/discord-lookup";
+            terminalOutput.innerHTML += `\n<span class="info">Opening Discord lookup for ${discordId}...</span>`;
+            modal.style.display = 'flex';
+        }
+        else if(cmd==='/iplog'){
+            const discordId = parts[1];
+            if(!discordId){ terminalOutput.innerHTML+=`\n<span class="error">Provide a Discord ID</span>`; return; }
+            const lines = ipLogsData.split('\n');
+            const results = lines.filter(line => line.includes(`id:${discordId}`));
+            if(results.length===0){ terminalOutput.innerHTML += `\n<span class="error">No logs found for ID: ${discordId}</span>`; }
+            else {
+                results.forEach(line=>{
+                    const userMatch = line.match(/user:\s*(\S+)/);
+                    const idMatch = line.match(/id:(\d+)/);
+                    const ipMatch = line.match(/ip=\s*([\d\.]+)/);
+                    const user = userMatch ? userMatch[1] : 'Unknown';
+                    const id = idMatch ? idMatch[1] : 'Unknown';
+                    const ip = ipMatch ? ipMatch[1] : 'Unknown';
+                    terminalOutput.innerHTML += `\n<span class="info">User: ${user} | Discord ID: ${id} | IP: ${ip}</span>`;
+                });
+            }
+        }
+        else if(cmd==='/help'){ terminalOutput.innerHTML+='\n<span class="info">Commands: /ip [IP] [Discord#1234], /downloadX [key], /discord [id], /iplog [DiscordID], /help</span>'; }
+        else terminalOutput.innerHTML+=`\n<span class="error">Unknown command: ${cmd}</span>`;
 
-  terminalOutput.scrollTop=terminalOutput.scrollHeight; 
-  terminalInput.value=''; 
-  autocomplete.style.display='none';
-}
-</script>
-
-/* ================================
-   BASIC ANTI-INSPECT
-================================ */
-
-// Disable right click
-document.addEventListener('contextmenu', e => e.preventDefault());
-
-// Disable text selection
-document.addEventListener('selectstart', e => e.preventDefault());
-
-// Disable drag (images, text)
-document.addEventListener('dragstart', e => e.preventDefault());
-
-// Block common key combos
-document.addEventListener('keydown', function(e){
-  const key = e.key.toLowerCase();
-
-  // F12
-  if (e.keyCode === 123) e.preventDefault();
-
-  // Ctrl / Cmd combos (except copy/paste/cut now)
-  if ((e.ctrlKey || e.metaKey) && (
-    key === 's' || // save
-    key === 'u' || // view source
-    key === 'p' || // print
-    key === 'a' || // select all
-    key === 'i' || // inspect
-    key === 'j'    // dev console
-  )) {
-    e.preventDefault();
-  }
-
-  // Ctrl + Shift combos
-  if ((e.ctrlKey || e.metaKey) && e.shiftKey && (
-    key === 'i' || key === 'j' || key === 'c'
-  )) {
-    e.preventDefault();
-  }
-});
-
-// Detect devtools open (size-based)
-(function(){
-  let devtoolsOpen = false;
-  const threshold = 160;
-
-  setInterval(() => {
-    const widthDiff = window.outerWidth - window.innerWidth;
-    const heightDiff = window.outerHeight - window.innerHeight;
-
-    if (widthDiff > threshold || heightDiff > threshold) {
-      if (!devtoolsOpen) {
-        devtoolsOpen = true;
-        document.body.innerHTML = `
-          <div style="
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            height:100vh;
-            background:#0f1115;
-            color:#22c55e;
-            font-family:Inter,sans-serif;
-            font-size:22px;
-            text-align:center;
-          ">
-            Developer tools detected.<br>Access denied.
-          </div>
-        `;
-      }
+        terminalOutput.scrollTop=terminalOutput.scrollHeight; 
+        terminalInput.value=''; autocomplete.style.display='none';
     }
-  }, 500);
-})();
 
-// Disable console usage
-(function(){
-  const noop = ()=>{};
-  console.log = noop;
-  console.warn = noop;
-  console.error = noop;
-  console.info = noop;
-  console.debug = noop;
-})();
+    // Event listeners
+    terminalSubmit.addEventListener('click', runCommand);
+    terminalInput.addEventListener('keydown', e=>{
+        if(e.key==='Enter') runCommand();
+        if(e.key==='ArrowUp'){ historyIndex=Math.max(0,historyIndex-1); terminalInput.value=history[historyIndex]||''; }
+        if(e.key==='ArrowDown'){ historyIndex=Math.min(history.length,historyIndex+1); terminalInput.value=history[historyIndex]||''; }
+    });
 
-// Block iframe embedding
-if (window.top !== window.self) {
-  window.top.location = window.self.location;
-}
+    // Init
+    terminalInput.disabled=true; terminalSubmit.disabled=true;
+    setTimeout(()=>{
+        terminalOutput.innerHTML='<span class="prompt">></span> <span class="info">Console ready.</span> Type /help for commands.';
+        terminalInput.disabled=false; terminalSubmit.disabled=false; terminalInput.focus();
+    },1800);
+
+})();
 </script>
+
 <script>
 (function(){
   const home = document.getElementById('homeScreen');
@@ -855,3 +921,4 @@ if (window.top !== window.self) {
 })();
 
 </script>
+

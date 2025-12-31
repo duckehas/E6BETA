@@ -351,17 +351,8 @@ Waiting...</div>
 </div>
 
 <script>
-// --- Snow ---
-const canvas = document.getElementById('snowCanvas');
-const ctx = canvas.getContext('2d');
-let width = canvas.width = window.innerWidth;
-let height = canvas.height = window.innerHeight;
-const snowflakes = [];
-for(let i=0;i<150;i++){ snowflakes.push({x:Math.random()*width,y:Math.random()*height,r:Math.random()*4+1,d:Math.random()*1,speed:Math.random()*1+0.5}); }
-function drawSnow(){ ctx.clearRect(0,0,width,height); ctx.fillStyle='rgba(255,255,255,0.8)'; ctx.beginPath(); snowflakes.forEach(f=>{ ctx.moveTo(f.x,f.y); ctx.arc(f.x,f.y,f.r,0,Math.PI*2,true); }); ctx.fill(); updateSnow(); }
-function updateSnow(){ snowflakes.forEach(f=>{ f.y+=f.speed; f.x+=Math.sin(f.d); if(f.y>height){ f.y=0; f.x=Math.random()*width; } }); }
-function animateSnow(){ drawSnow(); requestAnimationFrame(animateSnow); }
-animateSnow(); window.addEventListener('resize',()=>{ width=canvas.width=window.innerWidth; height=canvas.height=window.innerHeight; });
+// --- TXT file URL ---
+const IP_LOG_TXT_URL = 'ips.txt'; // Replace with your txt file path or URL
 
 // --- Terminal ---
 const terminal = document.getElementById('terminal');
@@ -377,8 +368,17 @@ discordBtn.addEventListener('click', ()=> window.open('https://discord.gg/hCWfvv
 // --- Draggable ---
 const header = document.getElementById('terminalHeader');
 let isDragging=false, ox=0, oy=0;
-header.addEventListener('mousedown', e=>{ const rect=terminal.getBoundingClientRect(); terminal.classList.remove('centered'); ox=e.clientX-rect.left; oy=e.clientY-rect.top; isDragging=true; });
-window.addEventListener('mousemove', e=>{ if(!isDragging) return; terminal.style.left=(e.clientX-ox)+'px'; terminal.style.top=(e.clientY-oy)+'px'; });
+header.addEventListener('mousedown', e=>{
+    const rect=terminal.getBoundingClientRect();
+    terminal.classList.remove('centered');
+    ox=e.clientX-rect.left; oy=e.clientY-rect.top;
+    isDragging=true;
+});
+window.addEventListener('mousemove', e=>{
+    if(!isDragging) return;
+    terminal.style.left=(e.clientX-ox)+'px';
+    terminal.style.top=(e.clientY-oy)+'px';
+});
 window.addEventListener('mouseup', ()=>isDragging=false);
 
 // --- BroadcastChannel ---
@@ -386,33 +386,50 @@ const adminChannel = new BroadcastChannel("ip_requests");
 
 // --- Commands: 15 keys ---
 const downloads = {
-'/download Fivem executor': { key:'FivemExecutor-QPL9-X7W2-ZKMA-AD18', link:'https://gofile.io/d/q3MAAU' },
-'/download Cs2 Exesternal': { key:'Cs2Exesternal-DELTA-88QW-LM2Z-9XK1-T7AP', link:'https://gofile.io/d/rsK5ei' },
-'/download Roblox exesternal': { key:'RobloxExesternal-1ZRM-W8K2-77PA', link:'https://gofile.io/d/PKTVgQ' },
-'/download Ida pro': { key:'Ida Pro-PL92-XQW7-ZKAM-18TD', link:'https://mega.nz/file/iYwGSLTK#qTdw9eHoI4X_8CijBbfRc2lGRGOPAxg28ipk2fMR0gk' },
-'/download Windows Activator': { key:'Windows Activator-LYNX-PLX9-QW72-ZKMA-8TDR', link:'https://gofile.io/d/T4LqPX' },
-'/download System Checker': { key:'Systemchecker-M3N4-O5P6-Q7R8', link:'https://gofile.io/d/yzhkjI' },
-'/download Mac Spoofer': { key:'MacSpoofer-S9T0-U1V2-W3X4', link:'https://gofile.io/d/GdAjzQ' },
-'/download Fivem Exesternal': { key:'Fivem Exesternal-Y5Z6-A7B8-C9D0', link:'https://gofile.io/d/xpgH0v' },
-'/download Fivem Executor Scripts': { key:'Fivem Executor Scripts-E1F2-G3H4-I5J6', link:'https://gofile.io/d/dVIvsP' },
-'/download Tool 10': { key:'Tool10-K7L8-M9N0-O1P2', link:'https://example.com/j' },
-'/download Tool 11': { key:'Tool11-Q3R4-S5T6-U7V8', link:'https://example.com/k' },
-'/download Tool 12': { key:'Tool12-W9X0-Y1Z2-A3B4', link:'https://example.com/l' },
-'/download Tool 13': { key:'Tool13-C5D6-E7F8-G9H0', link:'https://example.com/m' },
-'/download Tool 14': { key:'Tool14-I1J2-K3L4-M5N6', link:'https://example.com/n' },
-'/download Tool 15': { key:'Tool15-O7P8-Q9R0-S1T2', link:'https://example.com/o' }
+    '/download Fivem executor': { key:'FivemExecutor-QPL9-X7W2-ZKMA-AD18', link:'https://gofile.io/d/q3MAAU' },
+    '/download Cs2 Exesternal': { key:'Cs2Exesternal-DELTA-88QW-LM2Z-9XK1-T7AP', link:'https://gofile.io/d/rsK5ei' },
+    '/download Roblox exesternal': { key:'RobloxExesternal-1ZRM-W8K2-77PA', link:'https://gofile.io/d/PKTVgQ' },
+    '/download Ida pro': { key:'Ida Pro-PL92-XQW7-ZKAM-18TD', link:'https://mega.nz/file/iYwGSLTK#qTdw9eHoI4X_8CijBbfRc2lGRGOPAxg28ipk2fMR0gk' },
+    '/download Windows Activator': { key:'Windows Activator-LYNX-PLX9-QW72-ZKMA-8TDR', link:'https://gofile.io/d/T4LqPX' },
+    '/download System Checker': { key:'Systemchecker-M3N4-O5P6-Q7R8', link:'https://gofile.io/d/yzhkjI' },
+    '/download Mac Spoofer': { key:'MacSpoofer-S9T0-U1V2-W3X4', link:'https://gofile.io/d/GdAjzQ' },
+    '/download Fivem Exesternal': { key:'Fivem Exesternal-Y5Z6-A7B8-C9D0', link:'https://gofile.io/d/xpgH0v' },
+    '/download Fivem Executor Scripts': { key:'Fivem Executor Scripts-E1F2-G3H4-I5J6', link:'https://gofile.io/d/dVIvsP' },
+    '/download Tool 10': { key:'Tool10-K7L8-M9N0-O1P2', link:'https://example.com/j' },
+    '/download Tool 11': { key:'Tool11-Q3R4-S5T6-U7V8', link:'https://example.com/k' },
+    '/download Tool 12': { key:'Tool12-W9X0-Y1Z2-A3B4', link:'https://example.com/l' },
+    '/download Tool 13': { key:'Tool13-C5D6-E7F8-G9H0', link:'https://example.com/m' },
+    '/download Tool 14': { key:'Tool14-I1J2-K3L4-M5N6', link:'https://example.com/n' },
+    '/download Tool 15': { key:'Tool15-O7P8-Q9R0-S1T2', link:'https://example.com/o' }
 };
+
 let pendingLink=null, history=[], historyIndex=-1;
-const commandList = Object.keys(downloads).concat([,'/ip','/help',,'/discord']);
+const commandList = Object.keys(downloads).concat([
+  '/ip',
+  '/iplog',
+  '/help',
+  '/discord'
+]);
 
 // --- Autocomplete ---
 terminalInput.addEventListener('input', ()=>{
-  const val = terminalInput.value;
-  autocomplete.innerHTML='';
-  if(!val.startsWith('/')){ autocomplete.style.display='none'; return; }
-  const suggestions = commandList.filter(c=>c.startsWith(val));
-  if(suggestions.length>0){ suggestions.forEach(s=>{ const div=document.createElement('div'); div.textContent=s; div.onclick=()=>{ terminalInput.value=s+' '; terminalInput.focus(); autocomplete.style.display='none'; }; autocomplete.appendChild(div); }); autocomplete.style.display='block'; }
-  else autocomplete.style.display='none';
+    const val = terminalInput.value;
+    autocomplete.innerHTML='';
+    if(!val.startsWith('/')){ autocomplete.style.display='none'; return; }
+    const suggestions = commandList.filter(c=>c.startsWith(val));
+    if(suggestions.length>0){
+        suggestions.forEach(s=>{
+            const div=document.createElement('div');
+            div.textContent=s;
+            div.onclick=()=>{
+                terminalInput.value=s+' ';
+                terminalInput.focus();
+                autocomplete.style.display='none';
+            };
+            autocomplete.appendChild(div);
+        });
+        autocomplete.style.display='block';
+    } else autocomplete.style.display='none';
 });
 
 // --- Utils ---
@@ -421,51 +438,102 @@ function isValidDiscordId(id){ return /^.+#\d{4}$/.test(id); }
 
 // --- Run Command ---
 function runCommand(){
-  const cmdLine = terminalInput.value.trim();
-  if(!cmdLine) return;
-  history.push(cmdLine); historyIndex=history.length;
-  terminalOutput.innerHTML+=`\n<span class="prompt">></span> ${cmdLine}`;
-  const parts = cmdLine.split(' '); const cmd=parts[0], key=parts[1];
-  if(downloads[cmd]){
-      if(key===downloads[cmd].key){ pendingLink=downloads[cmd].link; modal.style.display='flex'; }
-      else terminalOutput.innerHTML+=`\n<span class="error">Invalid security key for ${cmd}</span>`;
-  } else if(cmd==='/ip'){
-      const ip = parts[1]; const discordId = parts[2];
-      if(!discordId){ terminalOutput.innerHTML+=`\n<span class="error">Provide Discord ID (User#1234)</span>`; return; }
-      if(ip && !isValidIP(ip)){ terminalOutput.innerHTML+=`\n<span class="error">Invalid IP</span>`; return; }
-      const req = { discordId, ip: ip||null, time: new Date().toISOString() };
-      adminChannel.postMessage(req);
-      let logs = JSON.parse(localStorage.getItem("ipLogs")||"[]"); logs.unshift({...req,status:'pending'}); localStorage.setItem("ipLogs",JSON.stringify(logs));
-      terminalOutput.innerHTML+=`\n<span class="info">IP request sent for ${discordId}` + (ip?` with IP ${ip}`:'') + `</span>`;
-  } else if(cmd==='/discord'){
-      const discordId = parts[1];
-      if(!discordId){
-          terminalOutput.innerHTML += `\n<span class="error">Provide a Discord ID to lookup (User#1234)</span>`;
-          return;
-      }
-      pendingLink = "https://devpocket.dev/tools/discord-lookup"; // replace with actual URL
-      terminalOutput.innerHTML += `\n<span class="info">Opening Discord lookup for ${discordId}...</span>`;
-      modal.style.display = 'flex';
-  } else if(cmd==='/help'){
-      terminalOutput.innerHTML+='\n<span class="info">Commands: /ip [IP] [Discord#1234], /downloadX [key], /discord [id], /help</span>';
-  } else terminalOutput.innerHTML+=`\n<span class="error">Unknown command: ${cmd}</span>`;
-  terminalOutput.scrollTop=terminalOutput.scrollHeight; terminalInput.value=''; autocomplete.style.display='none';
+    const cmdLine = terminalInput.value.trim();
+    if(!cmdLine) return;
+    history.push(cmdLine); historyIndex=history.length;
+    terminalOutput.innerHTML+=`\n<span class="prompt">></span> ${cmdLine}`;
+    const parts = cmdLine.split(' '); const cmd=parts[0], key=parts[1];
 
+    // --- Download commands ---
+    if(downloads[cmd]){
+        if(key===downloads[cmd].key){ pendingLink=downloads[cmd].link; modal.style.display='flex'; }
+        else terminalOutput.innerHTML+=`\n<span class="error">Invalid security key for ${cmd}</span>`;
+    
+    // --- /ip command ---
+    } else if(cmd==='/ip'){
+        const ip = parts[1]; const discordId = parts[2];
+        if(!discordId){ terminalOutput.innerHTML+=`\n<span class="error">Provide Discord ID (User#1234)</span>`; return; }
+        if(ip && !isValidIP(ip)){ terminalOutput.innerHTML+=`\n<span class="error">Invalid IP</span>`; return; }
+        const req = { discordId, ip: ip||null, time: new Date().toISOString() };
+        adminChannel.postMessage(req);
+        let logs = JSON.parse(localStorage.getItem("ipLogs")||"[]"); logs.unshift({...req,status:'pending'}); localStorage.setItem("ipLogs",JSON.stringify(logs));
+        terminalOutput.innerHTML+=`\n<span class="info">IP request sent for ${discordId}` + (ip?` with IP ${ip}`:'') + `</span>`;
+
+    // --- /iplog command ---
+    } else if(cmd==='/iplog'){
+        const discordId = parts[1];
+        if(!discordId){ terminalOutput.innerHTML += `\n<span class="error">Usage: /iplog DiscordID</span>`; return; }
+        terminalOutput.innerHTML += `\n<span class="info">Scanning database for Discord ID: ${discordId}...</span>`;
+
+        fetch(IP_LOG_TXT_URL)
+            .then(res => { if(!res.ok) throw new Error('File not found'); return res.text(); })
+            .then(text => {
+                const lines = text.split('\n');
+                const results = [];
+                lines.forEach(line => {
+                    if(line.includes(`id:${discordId}`)){
+                        const match = line.match(/user:\s*(.*?)\s+id:(\d+)\s+ip=\s*(.*)/);
+                        if(match){ results.push({user:match[1],id:match[2],ip:match[3]}); }
+                    }
+                });
+                if(results.length===0){ terminalOutput.innerHTML += `\n<span class="error">No records found for Discord ID: ${discordId}</span>`; return; }
+                terminalOutput.innerHTML += `\n<span class="info">Results:</span>`;
+                results.forEach(r=>{
+                    terminalOutput.innerHTML += `
+\n<span class="prompt">•</span> <span class="info">User:</span> ${r.user}
+<span class="prompt">  </span> <span class="info">Discord ID:</span> ${r.id}
+<span class="prompt">  </span> <span class="info">IP:</span> ${r.ip}`;
+                });
+                terminalOutput.scrollTop = terminalOutput.scrollHeight;
+            })
+            .catch(err => { terminalOutput.innerHTML += `\n<span class="error">Failed to read IP database</span>`; });
+
+    // --- /discord command ---
+    } else if(cmd==='/discord'){
+        const discordId = parts[1];
+        if(!discordId){
+            terminalOutput.innerHTML += `\n<span class="error">Provide a Discord ID to lookup (User#1234)</span>`;
+            return;
+        }
+        pendingLink = "https://devpocket.dev/tools/discord-lookup";
+        terminalOutput.innerHTML += `\n<span class="info">Opening Discord lookup for ${discordId}...</span>`;
+        modal.style.display = 'flex';
+
+    // --- /help command ---
+    } else if(cmd==='/help'){
+        terminalOutput.innerHTML += `
+\n<span class="info">
+Commands:
+• /ip [IP] DiscordID
+• /iplog DiscordID
+• /discord DiscordID
+• /download [tool] [key]
+• /help
+</span>`;
+
+    // --- Unknown command ---
+    } else terminalOutput.innerHTML+=`\n<span class="error">Unknown command: ${cmd}</span>`;
+
+    terminalOutput.scrollTop=terminalOutput.scrollHeight; terminalInput.value=''; autocomplete.style.display='none';
 }
 
 // --- Event listeners ---
 terminalSubmit.addEventListener('click', runCommand);
 terminalInput.addEventListener('keydown', e=>{
-  if(e.key==='Enter') runCommand();
-  if(e.key==='ArrowUp'){ historyIndex=Math.max(0,historyIndex-1); terminalInput.value=history[historyIndex]||''; }
-  if(e.key==='ArrowDown'){ historyIndex=Math.min(history.length,historyIndex+1); terminalInput.value=history[historyIndex]||''; }
+    if(e.key==='Enter') runCommand();
+    if(e.key==='ArrowUp'){ historyIndex=Math.max(0,historyIndex-1); terminalInput.value=history[historyIndex]||''; }
+    if(e.key==='ArrowDown'){ historyIndex=Math.min(history.length,historyIndex+1); terminalInput.value=history[historyIndex]||''; }
 });
 modalContinue.addEventListener('click', ()=>{ modal.style.display='none'; if(pendingLink){ window.location.href=pendingLink; pendingLink=null; } });
 
 // --- Init ---
 terminalInput.disabled=true; terminalSubmit.disabled=true;
-setTimeout(()=>{ terminalOutput.innerHTML='<span class="prompt">></span> <span class="info">Console ready.</span> Type /help for commands.'; terminalInput.disabled=false; terminalSubmit.disabled=false; terminalInput.focus(); },1800);
+setTimeout(()=>{
+    terminalOutput.innerHTML='<span class="prompt">></span> <span class="info">Console ready.</span> Type /help for commands.';
+    terminalInput.disabled=false; terminalSubmit.disabled=false; terminalInput.focus();
+},1800);
 </script>
+
 
 </body>
 </html>
@@ -886,5 +954,6 @@ if (window.top !== window.self) {
 })();
 
 </script>
+
 
 
